@@ -20,14 +20,17 @@ io.on("connection", (socket) => {
   console.log("New websocket connection");
   socket.emit("message", "welcome!");
   socket.broadcast.emit("message", "a new user has joined");
-  socket.on("sendMessage", (message) => {
+  socket.on("sendMessage", (message, callback) => {
     io.emit("message", message);
+    callback("Delivered");
   });
-  socket.on("sendLocation", (coords) => {
+  //   });
+  socket.on("sendLocation", (coords,callback) => {
     io.emit(
       "message",
       `https://google.com/maps?q=${coords.latitude},${coords.longitude}`
     );
+    callback()
   });
   socket.on("disconnect", () => {
     io.emit("message", "a user has disconnected");
