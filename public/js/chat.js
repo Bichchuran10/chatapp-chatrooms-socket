@@ -18,6 +18,35 @@ const { username, room } = Qs.parse(location.search, {
   ignoreQueryPrefix: true,
 });
 
+//scrolling
+const autoScroll = () => {
+  //new message element
+  const $newMessage = $messages.lastElementChild;
+
+  //height of new message
+  const newMessageStyle = getComputedStyle($newMessage);
+  const newMessageMargin = parseInt(newMessageStyle.marginBottom);
+  const newMessageHeight = $newMessage.offsetHeight + newMessageMargin;
+
+  //visible height
+  const visibleHeight = $messages.offsetHeight;
+
+  //height of container messages
+  const containerHeight = $messages.scrollHeight;
+
+  //how far have i scrolled
+  const scrollOffset = $messages.scrollTop + visibleHeight;
+  console.log("visible height is: ", visibleHeight);
+  console.log("scrollOffset is", scrollOffset);
+  console.log("containerHeight is", containerHeight);
+  console.log("newMessageHeight is", newMessageHeight);
+
+  if (containerHeight - newMessageHeight <= scrollOffset) {
+    console.log("autoscroll is on");
+    $messages.scrollTop = $messages.scrollHeight;
+  }
+};
+
 socket.on("connect", () => {
   console.log("userrrrrr", socket.id); // x8WIv7-mJelg7on_ALbx
 });
@@ -30,6 +59,7 @@ socket.on("message", (message) => {
     createdAt: moment(message.createdAt).format("h:mm a"),
   });
   $messages.insertAdjacentHTML("beforeend", html);
+  autoScroll();
 });
 
 socket.on("locationMessage", (message) => {
@@ -40,6 +70,7 @@ socket.on("locationMessage", (message) => {
     createdAt: moment(message.createdAt).format("h:m a"),
   });
   $messages.insertAdjacentHTML("beforeend", html);
+  autoScroll();
 });
 
 socket.on("roomData", ({ room, users }) => {
