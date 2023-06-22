@@ -41,23 +41,26 @@ io.on("connection", (socket) => {
 
     socket.join(user.room);
 
-    socket.emit("message", generateMessage("Welcome!")); //socket.emit sends it to a specific client
+    socket.emit("message", generateMessage("Admin", "Welcome!")); //socket.emit sends it to a specific client
     socket.broadcast
       .to(user.room)
-      .emit("message", generateMessage(`${user.username} has joined`)); //sends it to every connected client in that room except for this one
+      .emit("message", generateMessage("Admin", `${user.username} has joined`)); //sends it to every connected client in that room except for this one
 
     callback();
   });
 
   socket.on("sendMessage", (message, callback) => {
-    io.emit("message", generateMessage(message)); //io.emit -> sends it to every connected client
-    callback("Delivered");
+    const user = getUser(socket.id);
+    io.to(user.room).emit("message", generateMessage(user.username, message)); //io.emit -> sends it to every connected client
+    callback("acknowledged from server");
   });
   //   });
   socket.on("sendLocation", (coords, callback) => {
-    io.emit(
+    const user = getUser(socket.id);
+    io.to(user.room).emit(
       "locationMessage",
       generateLocationMessage(
+        user.username,
         `https://google.com/maps?q=${coords.latitude},${coords.longitude}`
       )
     );
@@ -68,7 +71,7 @@ io.on("connection", (socket) => {
     if (user) {
       io.to(user.room).emit(
         "message",
-        generateMessage(`${user.username} has left!`)
+        generateMessage("Admin", `${user.username} has left!`)
       );
     }
   });
