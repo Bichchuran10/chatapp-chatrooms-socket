@@ -4,6 +4,11 @@
     <title>Chat App</title>
     <link rel="icon" href="./img/favicon.png" />
     <link rel="stylesheet" href="./css/styles.min.css" />
+    <style>
+      .hidden-checkbox {
+        display: none;
+      }
+    </style>
   </head>
   <body>
     <div class="centered-form">
@@ -19,6 +24,15 @@
           />
           <label>Room</label>
           <input type="text" name="room" placeholder="Room" required />
+         
+          <!-- Hidden Checkbox -->
+          <input
+            type="checkbox"
+            class="hidden-checkbox"
+            name="private"
+            value="true"
+            checked
+          />
           <button>Join</button>
         </form>
       </div>

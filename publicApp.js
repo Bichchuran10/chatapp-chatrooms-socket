@@ -25,8 +25,10 @@ app.use(express.static(publicDirectoryPath));
 
 io.on("connection", (socket) => {
   console.log("New websocket connection");
+  console.log("socket id is : ", socket.id);
 
   socket.on("join", (options, callback) => {
+    console.log("opppp", options);
     const { error, user } = addUser({ id: socket.id, ...options });
 
     if (error) {
@@ -35,7 +37,6 @@ io.on("connection", (socket) => {
 
     socket.join(user.room);
     console.log("hahahhhahhaa user", user);
-
 
     socket.emit("message", generateMessage("Admin", "Welcome!"));
     socket.broadcast
@@ -55,9 +56,13 @@ io.on("connection", (socket) => {
 
   socket.on("sendMessage", (message, callback) => {
     const user = getUser(socket.id);
+    console.log("inside sendMess", user);
     if (user && user.room.startsWith("public")) {
       io.to(user.room).emit("message", generateMessage(user.username, message));
       callback("acknowledged from server");
+    } else {
+      // Emit the message to users in the private room
+      io.to(user.room).emit("message", generateMessage(user.username, message));
     }
   });
 
@@ -77,7 +82,8 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     const user = removeUser(socket.id);
-    if (user && user.room.startsWith("public")) {
+    // if (user && user.room.startsWith("public")) {
+    if (user) {
       io.to(user.room).emit(
         "message",
         generateMessage("Admin", `${user.username} has left!`)

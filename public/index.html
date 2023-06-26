@@ -17,11 +17,21 @@
             placeholder="Display name"
             required
           />
-          <!-- <label>Room</label>
-          <input type="text" name="room" placeholder="Room" required /> -->
+
           <button>Join</button>
         </form>
+        <button onclick="goToPrivate()" id="private-room-joining">
+          Join Private Room
+        </button>
       </div>
     </div>
   </body>
+  <script>
+    // Get the button element
+    // const buttonPublic=document.getElementById("public-room-joining")
+    // const buttonPrivate = document.getElementById("private-room-joining");
+    function goToPrivate() {
+      window.location.href = "./private.html";
+    }
+  </script>
 </html>

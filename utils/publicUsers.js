@@ -1,7 +1,8 @@
 const users = [];
 const publicRooms = {};
 
-const addUser = ({ id, username }) => {
+const addUser = ({ id, username, private, room }) => {
+  console.log(room);
   // Clean the data
   username = username.trim().toLowerCase();
 
@@ -19,18 +20,33 @@ const addUser = ({ id, username }) => {
       error: "Username is already taken.",
     };
   }
-
   // Find or create the public room with the most empty slots
-  let room = findOrCreatePublicRoom();
+  let _room = null;
+  if (private) {
+    _room = findOrCreatePrivateRoom(room);
+  } else {
+    _room = findOrCreatePublicRoom();
+  }
 
   // Store the user
-  const user = { id, username, room };
+  const user = { id, username, room: _room };
   users.push(user);
 
   // Add the user to the public room
-  publicRooms[room].push(user);
+  publicRooms[_room].push(user);
+  console.log("the user : ", user);
+  console.log("the users : ", users);
+  console.log("the public rooms", publicRooms);
 
   return { user };
+};
+
+const findOrCreatePrivateRoom = (roomName) => {
+  if (!publicRooms[roomName]) {
+    console.log("============================");
+    publicRooms[roomName] = [];
+  }
+  return roomName;
 };
 
 const findOrCreatePublicRoom = () => {
@@ -41,6 +57,9 @@ const findOrCreatePublicRoom = () => {
     (room) => publicRooms[room].length < maxRoomUsers
   );
 
+  console.log("avail room", availableRoom);
+  console.log("before : ", publicRooms);
+
   if (availableRoom) {
     return availableRoom; // Return the room with empty slots
   }
@@ -48,6 +67,8 @@ const findOrCreatePublicRoom = () => {
   // Create a new public room
   const room = generateRoomName();
   publicRooms[room] = [];
+
+  console.log("ppp", publicRooms);
 
   return room;
 };
@@ -99,6 +120,7 @@ const getPublicRooms = () => {
     const occupancy = publicRooms[room].length;
     publicRoomsList.push({ room, occupancy });
   }
+  // console.log("pun room list : ", publicRoomsList);
 
   return publicRoomsList;
 };

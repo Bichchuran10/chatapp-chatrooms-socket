@@ -29,7 +29,7 @@ io.on("connection", (socket) => {
 
   socket.on("join", (options, callback) => {
     console.log("oppppp", options);
-    
+    if(options.private===true){
     const { error, user } = addUser({ id: socket.id, ...options });
     console.log("hahahaa user : ", user);
 
