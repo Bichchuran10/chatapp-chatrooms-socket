@@ -38,6 +38,8 @@ const addUser = ({ id, username, private, room }) => {
   console.log("the users : ", users);
   console.log("the public rooms", publicRooms);
 
+  console.log("checkkkk  ", Object.keys(publicRooms));
+
   return { user };
 };
 

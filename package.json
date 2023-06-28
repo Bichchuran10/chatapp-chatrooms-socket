@@ -4,14 +4,15 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "start": "node publicApp.js.js",
-    "dev": "nodemon publicApp.js",
+    "start": "node app.js",
+    "dev": "nodemon app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Bichchuran Changmai",
   "license": "ISC",
   "dependencies": {
     "express": "^4.18.2",
+    "redis": "^2.8.0",
     "socket.io": "^4.6.2"
   },
   "devDependencies": {
