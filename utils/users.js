@@ -55,14 +55,17 @@ const addUser = ({ id, username, private, room }) => {
     };
   }
 
-  // Check for existing user with the same username
+  // // Check for existing user with the same username in the specified room
+  // const existingUser = users.find(
+  //   (user) => user.room === room && user.username === username
+  // );
 
-  const existingUser = users.find((user) => user.username === username);
-  if (existingUser) {
-    return {
-      error: "Username is already taken.",
-    };
-  }
+  // if (existingUser) {
+  //   return {
+  //     error: "Username is already taken in this room.",
+  //   };
+  // }
+
   // Find or create the public room with the most empty slots
   let _room = null;
   if (private) {
@@ -71,8 +74,32 @@ const addUser = ({ id, username, private, room }) => {
     _room = findOrCreatePublicRoom();
   }
 
+  console.log("room we got : ", _room);
+
+  console.log("users : ", users);
+
   // Store the user
   const user = { id, username, room: _room };
+
+  // Check for existing user with the same username in the specified room
+  const existingUser = users.find(
+    (user) => {
+      console.log('inside existing user: ',user)
+      console.log('inside existing user: ',_room)
+      return user.room === _room && user.username === username
+    }
+  );
+
+  if (existingUser) {
+    return {
+      error: "Username is already taken in this room.",
+    };
+  } else {
+    console.log("not an exiting user ", user);
+  }
+
+  console.log("just before pushing the user : ", user);
+
   users.push(user);
 
   const serializedUsersArray = JSON.stringify(users);
