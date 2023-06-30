@@ -90,6 +90,11 @@ socket.on("locationMessage", (locationMessage) => {
 });
 
 socket.on("roomData", ({ room, users }) => {
+  console.log(
+    "jkadsbkflsfjsaasjlsAJSFa roomdataaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa***"
+  );
+  console.log("showinggg roomdata room", room);
+  console.log("showinggg roomdata users", users);
   const html = Mustache.render(sidebarTemplate, {
     room,
     users,
@@ -107,4 +112,10 @@ socket.emit("join", { username, room, private }, (error) => {
     alert(error);
     location.href = "/";
   }
+});
+
+//new edition------------------------------------
+// Client-side code
+socket.on("roomData", (data) => {
+  console.log("Received roomData:", data);
 });

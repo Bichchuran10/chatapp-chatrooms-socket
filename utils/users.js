@@ -1,4 +1,5 @@
-const redis = require("redis");
+// const redis = require("redis");
+const redis = require("ioredis");
 const {
   usersInitialization,
   publicRoomsInitialization,

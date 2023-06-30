@@ -1,4 +1,5 @@
-const redis = require("redis");
+// const redis = require("redis");
+const redis = require("ioredis");
 
 const redisClient = redis.createClient({
   host: process.env.REDIS_ENDPOINT, // Redis server host
