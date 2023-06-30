@@ -15,11 +15,6 @@ const redis = require("redis");
 
 const io = socket(server);
 
-const redisClient = redis.createClient({
-  host: "localhost", // Redis server host
-  port: 6379, // Redis server port
-  password: "your_password", // Redis server password (if required)
-});
 
 const publicDirectoryPath = path.join(__dirname, "public");
 app.use(express.static(publicDirectoryPath));
@@ -32,28 +27,28 @@ const {
   getPublicRooms,
 } = require("./utils/users");
 
-// Check if Redis is connected
-redisClient.on("connect", () => {
-  console.log("Redis connected");
-});
+// // Check if Redis is connected
+// redisClient.on("connect", () => {
+//   console.log("Redis connected");
+// });
 
-// Check if Redis connection encountered an error
-redisClient.on("error", (error) => {
-  console.error("Redis connection error:", error);
-});
+// // Check if Redis connection encountered an error
+// redisClient.on("error", (error) => {
+//   console.error("Redis connection error:", error);
+// });
 
 io.on("connection", (socket) => {
   console.log("New websocket connection");
   console.log("socket id is : ", socket.id);
 
-  socket.on("join", (options, callback) => {
+  socket.on("join", async (options, callback) => {
     console.log("opppp", options);
-    const { error, user } = addUser({ id: socket.id, ...options });
+    const { error, user } = await addUser({ id: socket.id, ...options });
 
     if (error) {
       return callback(error);
     }
-
+    console.log("userrrrrr", user);
     socket.join(user.room);
 
     socket.emit("message", generateMessage("Admin", "Welcome!"));
@@ -61,19 +56,18 @@ io.on("connection", (socket) => {
       .to(user.room)
       .emit("message", generateMessage("Admin", `${user.username} has joined`));
     // console.log("in this room", user.room);
-    // Update the public rooms and assign the user to a room with the most empty slot
 
     // Update the roomData for all users in the public room
     io.to(user.room).emit("roomData", {
       room: user.room,
-      users: getUsersInRoom(user.room),
+      users: await getUsersInRoom(user.room),
     });
 
     callback();
   });
 
-  socket.on("sendMessage", (message, callback) => {
-    const user = getUser(socket.id);
+  socket.on("sendMessage", async (message, callback) => {
+    const user = await getUser(socket.id);
     console.log("inside sendMess", user);
     if (user && user.room.startsWith("public")) {
       io.to(user.room).emit("message", generateMessage(user.username, message));
@@ -84,8 +78,8 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("sendLocation", (coords, callback) => {
-    const user = getUser(socket.id);
+  socket.on("sendLocation", async (coords, callback) => {
+    const user = await getUser(socket.id);
     if (user && user.room.startsWith("public")) {
       io.to(user.room).emit(
         "locationMessage",
@@ -98,8 +92,8 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("disconnect", () => {
-    const user = removeUser(socket.id);
+  socket.on("disconnect", async () => {
+    const user = await removeUser(socket.id);
     // if (user && user.room.startsWith("public")) {
     if (user) {
       io.to(user.room).emit(
@@ -108,11 +102,11 @@ io.on("connection", (socket) => {
       );
       io.to(user.room).emit("roomData", {
         room: user.room,
-        users: getUsersInRoom(user.room),
+        users: await getUsersInRoom(user.room),
       });
 
       // Delete the public room if it becomes empty
-      const publicRoomsList = getPublicRooms();
+      const publicRoomsList = await getPublicRooms();
       const roomIndex = publicRoomsList.findIndex(
         (room) => room.room === user.room
       );

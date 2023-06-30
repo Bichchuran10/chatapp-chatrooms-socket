@@ -4,26 +4,21 @@ const {
   publicRoomsInitialization,
 } = require("./redisInitialization.js");
 
-const redisClient = redis.createClient({
-  host: "localhost", // Redis server host
-  port: 6379, // Redis server port
-  password: "your_password", // Redis server password (if required)
-});
+const util = require("util");
 
-let users = [];
-let publicRooms = {};
+const redisClient = redis.createClient({
+  host: process.env.REDIS_ENDPOINT, // Redis server host
+  // host: "localhost",
+  port: 6379, // Redis server port
+});
 
 redisClient.get("users", (error, result) => {
   if (error) {
     console.error("Error:", error);
   } else {
+    console.log("result is here ", result);
     if (!result) {
-      console.log("vvvvvvasassfsfds", result);
       usersInitialization();
-    } else {
-      const serializedArray = result;
-      users = JSON.parse(serializedArray);
-      console.log("Retrieved array:", users);
     }
   }
 });
@@ -32,18 +27,29 @@ redisClient.get("publicRooms", (error, result) => {
   if (error) {
     console.error("Error:", error);
   } else {
+    console.log("rrrrrrrrr", result);
     if (!result) {
-      console.log("asassfsfds", result);
       publicRoomsInitialization();
-    } else {
-      const serializedArray = result;
-      publicRooms = JSON.parse(serializedArray);
-      console.log("Retrieved array:", publicRooms);
     }
   }
 });
 
-const addUser = ({ id, username, private, room }) => {
+redisClient.get = util.promisify(redisClient.get);
+
+const getFromRedis = async (key) => {
+  try {
+    console.log("the keyyyyyyy ", key);
+    const result = await redisClient.get(key);
+    const data = JSON.parse(result);
+    console.log("Retrieved array:", key, data);
+    return data;
+  } catch (error) {
+    console.error("Error retrieving array from Redis:", error);
+    throw error;
+  }
+};
+
+const addUser = async ({ id, username, private, room }) => {
   console.log(room);
   // Clean the data
   username = username.trim().toLowerCase();
@@ -55,26 +61,17 @@ const addUser = ({ id, username, private, room }) => {
     };
   }
 
-  // // Check for existing user with the same username in the specified room
-  // const existingUser = users.find(
-  //   (user) => user.room === room && user.username === username
-  // );
-
-  // if (existingUser) {
-  //   return {
-  //     error: "Username is already taken in this room.",
-  //   };
-  // }
-
   // Find or create the public room with the most empty slots
   let _room = null;
   if (private) {
-    _room = findOrCreatePrivateRoom(room);
+    _room = await findOrCreatePrivateRoom(room);
   } else {
-    _room = findOrCreatePublicRoom();
+    _room = await findOrCreatePublicRoom();
   }
 
   console.log("room we got : ", _room);
+
+  const users = await getFromRedis("users");
 
   console.log("users : ", users);
 
@@ -82,23 +79,17 @@ const addUser = ({ id, username, private, room }) => {
   const user = { id, username, room: _room };
 
   // Check for existing user with the same username in the specified room
-  const existingUser = users.find(
-    (user) => {
-      console.log('inside existing user: ',user)
-      console.log('inside existing user: ',_room)
-      return user.room === _room && user.username === username
-    }
-  );
+  const existingUser = users.find((user) => {
+    console.log("inside existing user: ", user);
+    console.log("inside existing user: ", _room);
+    return user.room === _room && user.username === username;
+  });
 
   if (existingUser) {
     return {
       error: "Username is already taken in this room.",
     };
-  } else {
-    console.log("not an exiting user ", user);
   }
-
-  console.log("just before pushing the user : ", user);
 
   users.push(user);
 
@@ -108,9 +99,12 @@ const addUser = ({ id, username, private, room }) => {
     if (error) {
       console.error("Error:", error);
     } else {
-      console.log("Array stored successfully:", result);
+      console.log("Array stored successfully: 1", result);
     }
   });
+
+  const publicRooms = await getFromRedis("publicRooms");
+  console.log("hggtghghg", publicRooms);
 
   // Add the user to the public room
   publicRooms[_room].push(user);
@@ -123,7 +117,7 @@ const addUser = ({ id, username, private, room }) => {
       if (error) {
         console.error("Error:", error);
       } else {
-        console.log("Array stored successfully:", result);
+        console.log("Array stored successfully: 2", result);
       }
     }
   );
@@ -133,7 +127,9 @@ const addUser = ({ id, username, private, room }) => {
   return { user };
 };
 
-const findOrCreatePrivateRoom = (roomName) => {
+const findOrCreatePrivateRoom = async (roomName) => {
+  const publicRooms = await getFromRedis("publicRooms");
+
   if (!publicRooms[roomName]) {
     console.log("============================");
     publicRooms[roomName] = [];
@@ -146,7 +142,7 @@ const findOrCreatePrivateRoom = (roomName) => {
         if (error) {
           console.error("Error:", error);
         } else {
-          console.log("Array stored successfully:", result);
+          console.log("Array stored successfully: 3", result);
         }
       }
     );
@@ -154,9 +150,10 @@ const findOrCreatePrivateRoom = (roomName) => {
   return roomName;
 };
 
-const findOrCreatePublicRoom = () => {
+const findOrCreatePublicRoom = async () => {
+  const publicRooms = await getFromRedis("publicRooms");
   const maxRoomUsers = 3; // Set the maximum number of users per public room
-
+  console.log("cccccccccc", publicRooms);
   // Find a public room with empty slots
   const availableRoom = Object.keys(publicRooms).find(
     (room) => publicRooms[room].length < maxRoomUsers
@@ -170,7 +167,7 @@ const findOrCreatePublicRoom = () => {
   }
 
   // Create a new public room
-  const room = generateRoomName();
+  const room = await generateRoomName();
   publicRooms[room] = [];
 
   const serializedPublicRoomsArray = JSON.stringify(publicRooms);
@@ -182,7 +179,7 @@ const findOrCreatePublicRoom = () => {
       if (error) {
         console.error("Error:", error);
       } else {
-        console.log("Array stored successfully:", result);
+        console.log("Array stored successfully: 4", result);
       }
     }
   );
@@ -192,7 +189,8 @@ const findOrCreatePublicRoom = () => {
   return room;
 };
 
-const generateRoomName = () => {
+const generateRoomName = async () => {
+  const publicRooms = await getFromRedis("publicRooms");
   // Generate a unique room name
   let room = "publicroom";
   let count = 1;
@@ -202,16 +200,22 @@ const generateRoomName = () => {
   return room + count;
 };
 
-const getUser = (id) => {
+const getUser = async (id) => {
+  const users = await getFromRedis("users");
+
   return users.find((user) => user.id === id);
 };
 
 // Function to get users in a specific room
-const getUsersInRoom = (room) => {
+const getUsersInRoom = async (room) => {
+  const users = await getFromRedis("users");
   return users.filter((user) => user.room === room);
 };
 
-const removeUser = (id) => {
+const removeUser = async (id) => {
+  const users = await getFromRedis("users");
+  const publicRooms = await getFromRedis("publicRooms");
+
   const index = users.findIndex((user) => user.id === id);
   if (index !== -1) {
     const user = users.splice(index, 1)[0];
@@ -234,7 +238,7 @@ const removeUser = (id) => {
       if (error) {
         console.error("Error:", error);
       } else {
-        console.log("Array stored successfully:", result);
+        console.log("Array stored successfully: 5", result);
       }
     });
 
@@ -247,7 +251,7 @@ const removeUser = (id) => {
         if (error) {
           console.error("Error:", error);
         } else {
-          console.log("Array stored successfully:", result);
+          console.log("Array stored successfully: 6", result);
         }
       }
     );
@@ -256,7 +260,8 @@ const removeUser = (id) => {
   }
 };
 
-const getPublicRooms = () => {
+const getPublicRooms = async () => {
+  const publicRooms = await getFromRedis("publicRooms");
   const publicRoomsList = [];
 
   for (const room in publicRooms) {
