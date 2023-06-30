@@ -147,12 +147,12 @@ const io = socket(server);
 
 // Create separate Redis clients for publishing and subscribing
 const pubClient = new redis({
-  // host: "localhost",
-  host: process.env.REDIS_ENDPOINT,
+  host: "localhost",
+  // host: process.env.REDIS_ENDPOINT,
   port: 6379,
 });
 const subClient = new redis({
-  // host: "localhost",
+  host: "localhost",
   host: process.env.REDIS_ENDPOINT,
   port: 6379,
 });
@@ -239,7 +239,8 @@ io.on("connection", (socket) => {
   socket.on("sendMessage", async (message, callback) => {
     const user = await getUser(socket.id);
 
-    if (user && user.room.startsWith("public")) {
+    // if (user && user.room.startsWith("public")) {
+    if (user) {
       const formattedMessage = generateMessage(user.username, message);
       pubClient.publish(
         user.room,
@@ -253,9 +254,10 @@ io.on("connection", (socket) => {
         }
       );
       callback("acknowledged from server");
-    } else {
-      io.to(user.room).emit("message", generateMessage(user.username, message));
     }
+    // } else {
+    //   io.to(user.room).emit("message", generateMessage(user.username, message));
+    // }
   });
 
   socket.on("sendLocation", async (coords, callback) => {

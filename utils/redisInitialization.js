@@ -2,8 +2,8 @@
 const redis = require("ioredis");
 
 const redisClient = redis.createClient({
-  host: process.env.REDIS_ENDPOINT, // Redis server host
-  // host: "localhost",
+  // host: process.env.REDIS_ENDPOINT, // Redis server host
+  host: "localhost",
   port: 6379, // Redis server port
 });
 
