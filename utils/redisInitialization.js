@@ -59,7 +59,61 @@ function publicRoomsInitialization() {
   });
 }
 
+function privateRoomsInitialization() {
+  redisClient.exists("privateRooms", (error, result) => {
+    if (error) {
+      console.error("Error:", error);
+    } else {
+      if (result === 1) {
+        console.log("Key exists.");
+      } else {
+        const privateRooms = {};
+        const serializedPublicRoomsArray = JSON.stringify(privateRooms);
+
+        redisClient.set(
+          "privateRooms",
+          serializedPublicRoomsArray,
+          (error, result) => {
+            if (error) {
+              console.error("Error:", error);
+            } else {
+              console.log("Array stored successfully:", result);
+            }
+          }
+        );
+        console.log("Key does not exist.");
+      }
+    }
+  });
+}
+
+function roomEntityInitialization() {
+  redisClient.exists("roomEntity", (error, result) => {
+    if (error) {
+      console.error("Error:", error);
+    } else {
+      if (result === 1) {
+        console.log("Key exists.");
+      } else {
+        const rooms = {};
+        const serializedRooms = JSON.stringify(rooms);
+
+        redisClient.set("roomEntity", serializedRooms, (error, result) => {
+          if (error) {
+            console.error("Error:", error);
+          } else {
+            console.log("Array stored successfully location:", result);
+          }
+        });
+        console.log("Key does not exist.");
+      }
+    }
+  });
+}
+
 module.exports = {
   usersInitialization,
   publicRoomsInitialization,
+  privateRoomsInitialization,
+  roomEntityInitialization,
 };
