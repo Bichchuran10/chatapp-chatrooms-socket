@@ -15,7 +15,7 @@ const locationMessageTemplate = document.querySelector(
 const sidebarTemplate = document.querySelector("#sidebar-template").innerHTML;
 
 // Options
-const { username, room, private } = Qs.parse(location.search, {
+const { username, room, private, locations } = Qs.parse(location.search, {
   ignoreQueryPrefix: true,
 });
 
@@ -103,10 +103,11 @@ socket.on("roomData", ({ room, users }) => {
 });
 
 // Join a room
-socket.emit("join", { username, room, private }, (error) => {
-  console.log(username);
-  console.log(room);
-  console.log(private);
+socket.emit("join", { username, room, private, locations }, (error) => {
+  console.log("username", username);
+  console.log("room", room);
+  console.log("private", private);
+  console.log("locations not location", locations);
 
   if (error) {
     alert(error);

@@ -4,13 +4,14 @@ const {
   usersInitialization,
   publicRoomsInitialization,
   privateRoomsInitialization,
+  roomEntityInitialization,
 } = require("./redisInitialization.js");
 
 const util = require("util");
 
 const redisClient = redis.createClient({
-  // host: process.env.REDIS_ENDPOINT, // Redis server host
-  host: "localhost",
+  host: process.env.REDIS_ENDPOINT, // Redis server host
+  // host: "localhost",
   port: 6379, // Redis server port
 });
 
@@ -18,7 +19,7 @@ redisClient.get("users", (error, result) => {
   if (error) {
     console.error("Error:", error);
   } else {
-    console.log("result is here ", result);
+    console.log("rrrrrrrrr users", result);
     if (!result) {
       usersInitialization();
     }
@@ -29,7 +30,7 @@ redisClient.get("publicRooms", (error, result) => {
   if (error) {
     console.error("Error:", error);
   } else {
-    console.log("rrrrrrrrr", result);
+    console.log("rrrrrrrrr publicrooms", result);
     if (!result) {
       publicRoomsInitialization();
     }
@@ -39,9 +40,19 @@ redisClient.get("privateRooms", (error, result) => {
   if (error) {
     console.error("Error:", error);
   } else {
-    console.log("rrrrrrrrr", result);
+    console.log("rrrrrrrrr privaterooms", result);
     if (!result) {
       privateRoomsInitialization();
+    }
+  }
+});
+redisClient.get("roomEntity", (error, result) => {
+  if (error) {
+    console.error("Error:", error);
+  } else {
+    console.log("rrrrrrrrr roomEntity", result);
+    if (!result) {
+      roomEntityInitialization();
     }
   }
 });
@@ -61,7 +72,7 @@ const getFromRedis = async (key) => {
   }
 };
 
-const addUser = async ({ id, username, private, room }) => {
+const addUser = async ({ id, username, private, room, locations }) => {
   console.log(room);
   // Clean the data
   username = username.trim().toLowerCase();
@@ -92,7 +103,7 @@ const addUser = async ({ id, username, private, room }) => {
     _room = await findOrCreatePrivateRoom(room);
   } else {
     console.log("inside pubbbbbbbb");
-    _room = await findOrCreatePublicRoom();
+    _room = await findOrCreatePublicRoom(locations);
   }
 
   console.log("room we got : ", _room);
@@ -108,7 +119,7 @@ const addUser = async ({ id, username, private, room }) => {
     user = { id, username, room: _room, private: true };
   } else {
     console.log("storing public user starts here......", private);
-    user = { id, username, room: _room, private: false };
+    user = { id, username, room: _room, private: false, place: locations };
   }
 
   console.log("the user we got ....", user);
@@ -159,12 +170,24 @@ const addUser = async ({ id, username, private, room }) => {
     );
   } else {
     console.log("storing in public rooms......");
+    const roomEntity = await getFromRedis("roomEntity");
     const publicRooms = await getFromRedis("publicRooms");
     console.log("hggtghghg", publicRooms);
 
     // Add the user to the public room
     publicRooms[_room].push(user);
+
+    // Update the roomEntity map
+    if (roomEntity[locations]) {
+      roomEntity[locations][_room] = publicRooms[_room];
+    } else {
+      roomEntity[locations] = {
+        [_room]: publicRooms[_room],
+      };
+    }
+
     const serializedPublicRoomsArray = JSON.stringify(publicRooms);
+    const serializedRoomEntity = JSON.stringify(roomEntity);
 
     redisClient.set(
       "publicRooms",
@@ -177,7 +200,19 @@ const addUser = async ({ id, username, private, room }) => {
         }
       }
     );
-  } // console.log("checkkkk  ", Object.keys(publicRooms));
+
+    redisClient.set("roomEntity", serializedRoomEntity, (error, result) => {
+      if (error) {
+        console.error("Error:", error);
+      } else {
+        console.log("roomEntity map stored successfully", result);
+      }
+    });
+
+    roomEntityMap = await getFromRedis("roomEntity");
+
+    console.log("room entityyyyyyyyyyy", roomEntityMap);
+  }
 
   return { user };
 };
@@ -188,6 +223,16 @@ const findOrCreatePrivateRoom = async (roomName) => {
 
   if (!privateRooms[roomName]) {
     console.log("============================");
+
+    // if (!privateRooms.hasOwnProperty(roomName)) {
+    //   console.log("check pass for no existing privateroom name");
+    //   if (publicRooms.hasOwnProperty(roomName)) {
+    //     console.log("check for publicRooms if exists already");
+    //     return {
+    //       error: "Room name already exists as a public room.",
+    //     };
+    //   }
+
     privateRooms[roomName] = [];
     const serializedPublicRoomsArray = JSON.stringify(privateRooms);
 
@@ -206,32 +251,86 @@ const findOrCreatePrivateRoom = async (roomName) => {
   return roomName;
 };
 
-const findOrCreatePublicRoom = async () => {
+// const findOrCreatePublicRoom = async (locations) => {
+//   const publicRooms = await getFromRedis("publicRooms");
+//   const maxRoomUsers = 3; // Set the maximum number of users per public room
+
+//   // Filter public rooms based on the specified location
+//   const filteredRooms = Object.keys(publicRooms).filter((room) => {
+//     // Extract the location from the room name (assuming the room name format is "publicroom-location")
+//     const roomLocation = room.split("-")[1];
+//     return roomLocation === locations;
+//   });
+
+//   // Find a public room with the most empty slots from the filtered rooms
+//   const availableRoom = filteredRooms.reduce((maxRoom, room) => {
+//     const emptySlots = maxRoomUsers - publicRooms[room].length;
+//     const maxEmptySlots = maxRoom
+//       ? maxRoomUsers - publicRooms[maxRoom].length
+//       : 0;
+//     return emptySlots > maxEmptySlots ? room : maxRoom;
+//   }, null);
+
+//   // availableRoom will contain the public room with the most empty slots in the specified location
+
+//   if (availableRoom) {
+//     return availableRoom; // Return the room with empty slots
+//   }
+
+//   // Create a new public room in the specified location
+//   const room = await generateRoomName(locations);
+//   publicRooms[room] = [];
+
+//   const serializedPublicRoomsArray = JSON.stringify(publicRooms);
+
+//   redisClient.set(
+//     "publicRooms",
+//     serializedPublicRoomsArray,
+//     (error, result) => {
+//       if (error) {
+//         console.error("Error:", error);
+//       } else {
+//         console.log("Array stored successfully: 4", result);
+//       }
+//     }
+//   );
+
+//   console.log("ppp", publicRooms);
+
+//   return room;
+// };
+
+const findOrCreatePublicRoom = async (locations) => {
   const publicRooms = await getFromRedis("publicRooms");
   const maxRoomUsers = 3; // Set the maximum number of users per public room
-  console.log("inside find/create publicroom", publicRooms);
 
-  // Find a public room with the most empty slots
-  const availableRoom = Object.keys(publicRooms).reduce((maxRoom, room) => {
-    console.log(
-      "checking for empty slots... length: ",
-      publicRooms[room].length
-    );
-    const emptySlots = maxRoomUsers - publicRooms[room].length;
-    const maxEmptySlots = maxRoom
-      ? maxRoomUsers - publicRooms[maxRoom].length
-      : 0;
-    return emptySlots > maxEmptySlots ? room : maxRoom;
-  }, null);
+  // Filter public rooms based on the specified location
+  const filteredRooms = Object.keys(publicRooms).filter((room) => {
+    // Extract the location from the room name (assuming the room name format is "publicroom-location")
+    const roomLocation = room.split("-")[1];
+    return roomLocation === locations;
+  });
 
-  // availableRoom will contain the public room with the most empty slots
+  // Sort the filtered rooms based on additional criteria (e.g., creation time, total users)
+  const sortedRooms = filteredRooms.sort((roomA, roomB) => {
+    // Compare additional criteria here
+    // For example, if you want to prioritize rooms with fewer total users:
+    const totalUsersA = publicRooms[roomA].length;
+    const totalUsersB = publicRooms[roomB].length;
+    return totalUsersA - totalUsersB;
+  });
+
+  // Find the first room with empty slots from the sorted rooms
+  const availableRoom = sortedRooms.find((room) => {
+    return publicRooms[room].length < maxRoomUsers;
+  });
 
   if (availableRoom) {
     return availableRoom; // Return the room with empty slots
   }
 
-  // Create a new public room
-  const room = await generateRoomName();
+  // Create a new public room in the specified location
+  const room = await generateRoomName(locations);
   publicRooms[room] = [];
 
   const serializedPublicRoomsArray = JSON.stringify(publicRooms);
@@ -253,9 +352,9 @@ const findOrCreatePublicRoom = async () => {
   return room;
 };
 
-const generateRoomName = async () => {
+const generateRoomName = async (locations) => {
   const { v4: uuidv4 } = require("uuid");
-  return "publicroom-" + uuidv4();
+  return "publicroom-" + locations + "-" + uuidv4();
 };
 
 const getUser = async (id) => {
@@ -275,6 +374,7 @@ const removeUser = async (id) => {
   const users = await getFromRedis("users");
   const privateRooms = await getFromRedis("privateRooms");
   const publicRooms = await getFromRedis("publicRooms");
+  const roomEntity = await getFromRedis("roomEntity");
   const index = users.findIndex((user) => user.id === id);
   if (index !== -1) {
     const user = users.splice(index, 1)[0];
@@ -322,20 +422,62 @@ const removeUser = async (id) => {
       return user;
     } else {
       // Remove the user from the public room
-      console.log("removing the user from public room");
+      console.log("removing the user from the public room...");
       const roomUsers = publicRooms[user.room];
+      console.log("what is roomUsers .......", roomUsers);
+
       if (roomUsers) {
         const userIndex = roomUsers.findIndex((u) => u.id === id);
+
         if (userIndex !== -1) {
           roomUsers.splice(userIndex, 1);
+
+          console.log(
+            "deleted the user from publicRooms and updated roomUsers ....",
+            roomUsers
+          );
+
+          // Check if the public room is empty and delete it from publicRooms if necessary
           if (roomUsers.length === 0) {
-            console.log("deleting the public room itself.....");
+            console.log(
+              "The public room is empty, deleting it from publicRooms..."
+            );
             delete publicRooms[user.room];
+          }
+
+          // Remove the user from roomEntity
+          const location = user.place;
+          console.log("Removing the user from roomEntity...");
+          if (roomEntity[location] && roomEntity[location][user.room]) {
+            const roomIndex = roomEntity[location][user.room].findIndex(
+              (u) => u.id === id
+            );
+            if (roomIndex !== -1) {
+              roomEntity[location][user.room].splice(roomIndex, 1);
+
+              console.log("User deleted from roomEntity successfully");
+
+              // Check if the room is empty and delete it from roomEntity if necessary
+              if (roomEntity[location][user.room].length === 0) {
+                console.log(
+                  "The room is empty, deleting it from roomEntity..."
+                );
+                delete roomEntity[location][user.room];
+              }
+
+              // Check if the location has any remaining rooms and delete the location if empty
+              if (Object.keys(roomEntity[location]).length === 0) {
+                console.log(
+                  "The location is empty, deleting it from roomEntity..."
+                );
+                delete roomEntity[location];
+              }
+            }
           }
         }
       }
-      const serializedUsersArray = JSON.stringify(users);
 
+      const serializedUsersArray = JSON.stringify(users);
       redisClient.set("users", serializedUsersArray, (error, result) => {
         if (error) {
           console.error("Error:", error);
@@ -345,7 +487,6 @@ const removeUser = async (id) => {
       });
 
       const serializedPublicRoomsArray = JSON.stringify(publicRooms);
-
       redisClient.set(
         "publicRooms",
         serializedPublicRoomsArray,
@@ -357,28 +498,24 @@ const removeUser = async (id) => {
           }
         }
       );
+
+      const serializedRoomEntity = JSON.stringify(roomEntity);
+      redisClient.set("roomEntity", serializedRoomEntity, (error, result) => {
+        if (error) {
+          console.error("Error:", error);
+        } else {
+          console.log("roomEntity stored successfully", result);
+        }
+      });
+
       return user;
     }
   }
 };
-
-// const getPublicRooms = async () => {
-//   const publicRooms = await getFromRedis("publicRooms");
-//   const publicRoomsList = [];
-
-//   for (const room in publicRooms) {
-//     const occupancy = publicRooms[room].length;
-//     publicRoomsList.push({ room, occupancy });
-//   }
-//   // console.log("pun room list : ", publicRoomsList);
-
-//   return publicRoomsList;
-// };
 
 module.exports = {
   addUser,
   getUser,
   removeUser,
   getUsersInRoom,
-  // getPublicRooms,
 };
