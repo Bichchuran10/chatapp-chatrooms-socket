@@ -251,55 +251,6 @@ const findOrCreatePrivateRoom = async (roomName) => {
   return roomName;
 };
 
-// const findOrCreatePublicRoom = async (locations) => {
-//   const publicRooms = await getFromRedis("publicRooms");
-//   const maxRoomUsers = 3; // Set the maximum number of users per public room
-
-//   // Filter public rooms based on the specified location
-//   const filteredRooms = Object.keys(publicRooms).filter((room) => {
-//     // Extract the location from the room name (assuming the room name format is "publicroom-location")
-//     const roomLocation = room.split("-")[1];
-//     return roomLocation === locations;
-//   });
-
-//   // Find a public room with the most empty slots from the filtered rooms
-//   const availableRoom = filteredRooms.reduce((maxRoom, room) => {
-//     const emptySlots = maxRoomUsers - publicRooms[room].length;
-//     const maxEmptySlots = maxRoom
-//       ? maxRoomUsers - publicRooms[maxRoom].length
-//       : 0;
-//     return emptySlots > maxEmptySlots ? room : maxRoom;
-//   }, null);
-
-//   // availableRoom will contain the public room with the most empty slots in the specified location
-
-//   if (availableRoom) {
-//     return availableRoom; // Return the room with empty slots
-//   }
-
-//   // Create a new public room in the specified location
-//   const room = await generateRoomName(locations);
-//   publicRooms[room] = [];
-
-//   const serializedPublicRoomsArray = JSON.stringify(publicRooms);
-
-//   redisClient.set(
-//     "publicRooms",
-//     serializedPublicRoomsArray,
-//     (error, result) => {
-//       if (error) {
-//         console.error("Error:", error);
-//       } else {
-//         console.log("Array stored successfully: 4", result);
-//       }
-//     }
-//   );
-
-//   console.log("ppp", publicRooms);
-
-//   return room;
-// };
-
 const findOrCreatePublicRoom = async (locations) => {
   const publicRooms = await getFromRedis("publicRooms");
   const maxRoomUsers = 3; // Set the maximum number of users per public room

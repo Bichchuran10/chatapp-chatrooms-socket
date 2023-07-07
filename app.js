@@ -21,13 +21,13 @@ const io = socket(server);
 
 // Create separate Redis clients for publishing and subscribing
 const pubClient = new redis({
-  host: "localhost",
-  // host: process.env.REDIS_ENDPOINT,
+  // host: "localhost",
+  host: process.env.REDIS_ENDPOINT,
   port: 6379,
 });
 const subClient = new redis({
-  host: "localhost",
-  //  host: process.env.REDIS_ENDPOINT,
+  // host: "localhost",
+  host: process.env.REDIS_ENDPOINT,
   port: 6379,
 });
 
