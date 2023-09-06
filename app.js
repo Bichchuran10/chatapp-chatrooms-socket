@@ -38,8 +38,10 @@ io.adapter(
   })
 );
 
-const publicDirectoryPath = path.join(__dirname, "public");
-app.use(express.static(publicDirectoryPath));
+// const publicDirectoryPath = path.join(__dirname, "public");
+// const publicDirectoryPath = path.join(__dirname, "public");
+// app.use(express.static(publicDirectoryPath));
+app.use(express.static(path.join(__dirname, "public")));
 
 io.on("connection", (socket) => {
   console.log("New websocket connection");

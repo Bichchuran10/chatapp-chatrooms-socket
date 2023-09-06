@@ -175,6 +175,7 @@ const addUser = async ({ id, username, private, room, locations }) => {
     console.log("hggtghghg", publicRooms);
 
     // Add the user to the public room
+    // publicRooms[_room].push(user);
     publicRooms[_room].push(user);
 
     // Update the roomEntity map
@@ -253,15 +254,46 @@ const findOrCreatePrivateRoom = async (roomName) => {
 
 const findOrCreatePublicRoom = async (locations) => {
   const publicRooms = await getFromRedis("publicRooms");
+  const roomEntity = await getFromRedis("roomEntity");
   const maxRoomUsers = 3; // Set the maximum number of users per public room
 
   // Filter public rooms based on the specified location
-  const filteredRooms = Object.keys(publicRooms).filter((room) => {
-    // Extract the location from the room name (assuming the room name format is "publicroom-location")
-    const roomLocation = room.split("-")[1];
-    return roomLocation === locations;
-  });
+  // const filteredRooms = Object.keys(publicRooms).filter((room) => {
+  //   // Extract the location from the room name (assuming the room name format is "publicroom-location")
+  //   console.log("room in =====================", room);
+  //   // const roomLocation = room.split("-")[1];
+  //   // return roomLocation === locations;
+  //   console.log("locations", locations);
+  //   let roomLocation = locations;
+  //   console.log("what is this", (roomLocation = locations));
+  //   console.log("roomLoc", roomLocation);
+  //   return roomLocation;
+  // });
+  // const filteredRooms = [];
+  let filteredRooms = [];
+  if (roomEntity.hasOwnProperty(locations)) {
+    const locationRoom = roomEntity[locations];
+    filteredRooms = Object.keys(locationRoom);
+    console.log("the location ", filteredRooms);
+    console.log("Room names in the specified location:", filteredRooms);
+  } else {
+    console.log("Location not found in the data.");
+  }
+  // const filteredRooms = Object.keys(roomEntity).filter((room) => {
+  //   console.log("room===============================", room);
+  //   return room == locations
+  //   ;
+  // });
 
+  // Object.values(publicRooms).forEach((roomArray) => {
+  //   const matchingUsers = roomArray.filter((user) => user.place === locations);
+  //   console.log("matchingUsers", matchingUsers);
+  //   const matchingRoomNames = matchingUsers.map((user) => user.room);
+  //   console.log("matchingRoomNames", matchingRoomNames);
+  //   filteredRooms.push(...matchingRoomNames);
+  // });
+
+  console.log("filteredRooms==========================", filteredRooms);
   // Sort the filtered rooms based on additional criteria (e.g., creation time, total users)
   const sortedRooms = filteredRooms.sort((roomA, roomB) => {
     // Compare additional criteria here
@@ -275,7 +307,7 @@ const findOrCreatePublicRoom = async (locations) => {
   const availableRoom = sortedRooms.find((room) => {
     return publicRooms[room].length < maxRoomUsers;
   });
-
+  console.log("available rooms ========", availableRoom);
   if (availableRoom) {
     return availableRoom; // Return the room with empty slots
   }
@@ -305,7 +337,8 @@ const findOrCreatePublicRoom = async (locations) => {
 
 const generateRoomName = async (locations) => {
   const { v4: uuidv4 } = require("uuid");
-  return "publicroom-" + locations + "-" + uuidv4();
+  // return "publicroom-" + locations + "-" + uuidv4();
+  return locations + uuidv4();
 };
 
 const getUser = async (id) => {

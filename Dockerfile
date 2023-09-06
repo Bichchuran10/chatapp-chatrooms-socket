@@ -1,10 +1,17 @@
-FROM mhart/alpine-node:11 AS build
-WORKDIR /srv
-ADD package.json .
-RUN npm install
-ADD . .
+# Use an appropriate base Linux image
+FROM alpine:latest
 
-FROM mhart/alpine-node:base-11
-COPY --from=build /srv .
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the "chat-linux" executable into the container
+COPY chat-linux /app/
+
+# (Optional) Install any additional dependencies if needed
+# RUN apk add --no-cache <package-name>
+
+# Expose any required ports (replace with the actual port number)
 EXPOSE 3000
-CMD ["node", "app.js"]
+
+# Specify the command to run when the container starts
+CMD ["./chat-linux"]

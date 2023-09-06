@@ -1,0 +1,53 @@
+"pkg": {
+    "assets": [
+      "./node_modules/**/*",
+      "./public/**/*",
+      "./recipes/**/*",
+      "./utils/**/*",
+      "./Dockerfile"
+    ],
+    "outputPath": "dist"
+}
+
+
+
+and then pkg package.json
+
+
+
+Dockerfile :-
+
+FROM mhart/alpine-node:11 AS build
+WORKDIR /srv
+ADD package.json .
+RUN npm install
+ADD . .
+
+FROM mhart/alpine-node:base-11
+COPY --from=build /srv .
+EXPOSE 3000
+CMD ["node", "app.js"]
+
+
+
+
+//linux
+# Use a Linux base image
+FROM ubuntu:latest
+
+# Create a directory for your application
+WORKDIR /app
+
+# Copy your Linux executable into the container
+COPY chat-linux .
+
+# Expose the port(s) your application will listen on
+EXPOSE 3000
+
+# Define the command to run your Linux executable
+CMD ["chat-linux"]
+
+
+
+
+
